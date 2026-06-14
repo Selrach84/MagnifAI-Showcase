@@ -1,0 +1,1895 @@
+{
+  "name": "AI Content Engine — Solar & Battery v2 (100X)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "error-collector-0",
+      "name": "Error Collector",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"text\": \"=\\ud83d\\udea8 AI Content Engine failure at node {{ $json.error?.node?.name || 'unknown' }} \\u2014 run {{ $json.runId }}\"}"
+      },
+      "id": "alert-charles-(slack-email)-1",
+      "name": "Alert Charles (Slack/Email)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2820,
+        1200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "weekly-trigger-(mon-0600)-2",
+      "name": "Weekly Trigger (Mon 06:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// kill-switch + idempotency\nif (($env.KILL_SWITCH||'').toLowerCase()==='true') return [];\nconst d=new Date();\nconst wk=`${d.getUTCFullYear()}-W${Math.ceil((((d-new Date(Date.UTC(d.getUTCFullYear(),0,1)))/864e5)+1)/7)}`;\nreturn [{ json: { runId: wk, startedAt: d.toISOString(), tokenBudget: Number($env.TOKEN_BUDGET||200000), tokensUsed: 0 } }];"
+      },
+      "id": "kill-switch-+-dedupe-guard-3",
+      "name": "Kill-switch + Dedupe Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        20,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ANALYTICS_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "get-last-week-analytics-4",
+      "name": "Get Last-Week Analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANALYTICS",
+          "name": "ANALYTICS API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.RESEARCH_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "trend+keyword+incentive-research-5",
+      "name": "Trend+Keyword+Incentive Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_RESEARCH",
+          "name": "RESEARCH API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"You score content topics for a solar & battery company by predicted ROI using prior performance. Output ONLY JSON {scored:[{topic,score,segment}]}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Prior performance: {{ JSON.stringify($('Get Last-Week Analytics').item.json) }}\\nResearch: {{ JSON.stringify($json) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-topic-scoring-6",
+      "name": "Claude: Topic Scoring",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json?.content?.[0]?.text ?? $json?.text ?? '';\nlet o; try{o=JSON.parse(c);}catch(e){throw new Error('SCORING_BAD_JSON');}\nif(!Array.isArray(o.scored)) throw new Error('SCORING_SCHEMA');\nreturn [{json:{...$json, scored:o.scored}}];"
+      },
+      "id": "validate-scoring-json-7",
+      "name": "Validate Scoring JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"Generate 10 content ideas across segments residential/commercial/battery for the client. Output ONLY JSON {ideas:[{title,hook,segment,angle}]}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Scored topics: {{ JSON.stringify($json.scored) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-generate-10-segmented-ideas-8",
+      "name": "Claude: Generate 10 Segmented Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json?.content?.[0]?.text ?? '';\nlet o; try{o=JSON.parse(c);}catch(e){throw new Error('IDEAS_BAD_JSON');}\nif(!Array.isArray(o.ideas)||o.ideas.length<1) throw new Error('IDEAS_SCHEMA');\nreturn o.ideas.map(i=>({json:{idea:i, runId:$('Kill-switch + Dedupe Guard').item.json.runId}}));"
+      },
+      "id": "validate-ideas-json-9",
+      "name": "Validate Ideas JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APPROVAL_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $json.runId }}\", \"stage\": \"strategy\", \"items\": \"={{ JSON.stringify($json.idea) }}\"}"
+      },
+      "id": "strategy-review-(human-approve)-10",
+      "name": "Strategy Review (human approve)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GHL",
+          "name": "GoHighLevel API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      },
+      "id": "strategy-approved?-11",
+      "name": "Strategy Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "rejected-→-re-research-(noop)-12",
+      "name": "Rejected → re-research (NoOp)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"Write a structured content brief for the approved idea. Output ONLY JSON {brief:{goal,audience,outline,keywords,cta}}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Idea: {{ JSON.stringify($json.idea) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-content-brief-13",
+      "name": "Claude: Content Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 4000, \"system\": \"Draft a video script, an SEO blog post, and social variants (LinkedIn, Facebook, Instagram) from the brief. Solar/battery domain. Output ONLY JSON {script,blog,social:{linkedin,facebook,instagram}}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Brief: {{ JSON.stringify($json) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-draft-(script-blog-social)-14",
+      "name": "Claude: Draft (script/blog/social)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json?.content?.[0]?.text ?? '';\nlet o; try{o=JSON.parse(c);}catch(e){throw new Error('DRAFT_BAD_JSON');}\nfor(const k of ['script','blog','social']) if(!o[k]) throw new Error('DRAFT_MISSING_'+k);\nreturn [{json:{draft:o, runId:$('Kill-switch + Dedupe Guard').item.json.runId, revise:0}}];"
+      },
+      "id": "validate-draft-schema-15",
+      "name": "Validate Draft Schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"Create 3 thumbnail/image generation prompts for the content. Output ONLY JSON {prompts:[...]}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Draft: {{ JSON.stringify($json.draft) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-thumbnail-prompts-16",
+      "name": "Claude: Thumbnail Prompts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2660,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"Check the draft for brand voice + SEO. Output ONLY JSON {brandPass:bool, seoPass:bool, issues:[...]}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Draft: {{ JSON.stringify($('Validate Draft Schema').item.json.draft) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-brand+seo-check-17",
+      "name": "Claude: Brand+SEO Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"You are a compliance reviewer. FLAG any unverifiable solar/battery savings %, ROI timeframe, or tax-credit/incentive claim. Truth-in-advertising. Output ONLY JSON {compliant:bool, flagged:[...]}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Draft: {{ JSON.stringify($('Validate Draft Schema').item.json.draft) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-solar-claims-compliance-18",
+      "name": "Claude: Solar Claims Compliance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3100,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"model\": \"={{ $env.CLAUDE_MODEL || 'claude-sonnet-4-5' }}\", \"max_tokens\": 2000, \"system\": \"Fact-check claims and estimate AI/plagiarism risk. Output ONLY JSON {factPass:bool, plagiarismRisk:'low|med|high'}.\", \"messages\": [{\"role\": \"user\", \"content\": \"=Draft: {{ JSON.stringify($('Validate Draft Schema').item.json.draft) }}\"}]}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        }
+      },
+      "id": "claude-fact-check+plagiarism-19",
+      "name": "Claude: Fact-check+Plagiarism",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3320,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic API (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function p(n){const c=$(n).item.json?.content?.[0]?.text??'{}';try{return JSON.parse(c);}catch(e){return {};}}\nconst b=p('Claude: Brand+SEO Check'), co=p('Claude: Solar Claims Compliance'), f=p('Claude: Fact-check+Plagiarism');\nconst pass = b.brandPass && b.seoPass && co.compliant && f.factPass && f.plagiarismRisk!=='high';\nconst base=$('Validate Draft Schema').item.json;\nreturn [{json:{...base, qc:{pass, brand:b, compliance:co, fact:f}}}];"
+      },
+      "id": "aggregate-qc-verdict-20",
+      "name": "Aggregate QC Verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        3540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.qc.pass }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      },
+      "id": "quality-pass?-21",
+      "name": "Quality Pass?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=($json.revise||0)+1; if(r>2) return [{json:{...$json, escalate:true, revise:r}}];\nreturn [{json:{...$json, revise:r, escalate:false}}];"
+      },
+      "id": "revise-counter-22",
+      "name": "Revise Counter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.escalate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      },
+      "id": "escalate?-23",
+      "name": "Escalate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3980,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"text\": \"=\\u26a0\\ufe0f Content failed QC 3x \\u2014 human review needed. Run {{ $json.runId }}\"}"
+      },
+      "id": "escalate-to-human-(alert)-24",
+      "name": "Escalate to Human (alert)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4200,
+        640
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.IMAGEGEN_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"prompts\": \"={{ $('Claude: Thumbnail Prompts').item.json.content[0].text }}\"}"
+      },
+      "id": "generate-assets-(image-gen)-25",
+      "name": "Generate Assets (image-gen)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3980,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_IMAGEGEN",
+          "name": "IMAGEGEN API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "pack",
+              "value": "={{ { draft: $('Validate Draft Schema').item.json.draft, assets: $json } }}",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "id": "assemble-content-pack-26",
+      "name": "Assemble Content Pack",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZOHO_UPLOAD_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"folder\": \"=ContentEngine/{{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"pack\": \"={{ JSON.stringify($json.pack) }}\"}"
+      },
+      "id": "zoho-workdrive-upload-(versioned)-27",
+      "name": "Zoho WorkDrive Upload (versioned)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4420,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ZOHO",
+          "name": "ZOHO API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APPROVAL_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"stage\": \"editor\"}"
+      },
+      "id": "editor-review-(human-approve)-28",
+      "name": "Editor Review (human approve)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4640,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GHL",
+          "name": "GoHighLevel API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        }
+      },
+      "id": "editor-approved?-29",
+      "name": "Editor Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "id": "wait-for-recorded-video-30",
+      "name": "Wait for Recorded Video",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5080,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CLIPPER_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"videoUrl\": \"={{ $json.videoUrl }}\"}"
+      },
+      "id": "auto-cut-shorts-reels-clips-31",
+      "name": "Auto-cut Shorts/Reels/Clips",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5300,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_CLIPPER",
+          "name": "CLIPPER API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "utm",
+              "value": "=utm_source={ch}&utm_campaign={{ $('Kill-switch + Dedupe Guard').item.json.runId }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "fan-out-prep-32",
+      "name": "Fan-out Prep",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "id": "merge-published-33",
+      "name": "Merge Published",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        6180,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.YOUTUBE_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"utm\": \"={{ $('Fan-out Prep').item.json.utm }}\"}"
+      },
+      "id": "publish-youtube-34",
+      "name": "Publish YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5740,
+        120
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_YOUTUBE",
+          "name": "YOUTUBE API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WORDPRESS_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"utm\": \"={{ $('Fan-out Prep').item.json.utm }}\"}"
+      },
+      "id": "publish-wordpress-(seo+schema)-35",
+      "name": "Publish WordPress (SEO+schema)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5740,
+        240
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WORDPRESS",
+          "name": "WORDPRESS API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LINKEDIN_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"utm\": \"={{ $('Fan-out Prep').item.json.utm }}\"}"
+      },
+      "id": "schedule-linkedin-36",
+      "name": "Schedule LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5740,
+        360
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_LINKEDIN",
+          "name": "LINKEDIN API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FACEBOOK_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"utm\": \"={{ $('Fan-out Prep').item.json.utm }}\"}"
+      },
+      "id": "schedule-facebook-37",
+      "name": "Schedule Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5740,
+        480
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_FACEBOOK",
+          "name": "FACEBOOK API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.INSTAGRAM_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"utm\": \"={{ $('Fan-out Prep').item.json.utm }}\"}"
+      },
+      "id": "schedule-instagram-38",
+      "name": "Schedule Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5740,
+        600
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_INSTAGRAM",
+          "name": "INSTAGRAM API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EMAIL_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\", \"utm\": \"={{ $('Fan-out Prep').item.json.utm }}\"}"
+      },
+      "id": "send-email-newsletter-39",
+      "name": "Send Email Newsletter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5740,
+        720
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_EMAIL",
+          "name": "EMAIL API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GHL_LEADS_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"runId\": \"={{ $('Kill-switch + Dedupe Guard').item.json.runId }}\"}"
+      },
+      "id": "capture-leads-→-ghl-crm-40",
+      "name": "Capture Leads → GHL CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6400,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_GHL",
+          "name": "GoHighLevel API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ANALYTICS_ENDPOINT }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "collect-analytics-(48h-7d)-41",
+      "name": "Collect Analytics (48h/7d)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6620,
+        300
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ANALYTICS",
+          "name": "ANALYTICS API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// write scorecard the NEXT run reads -> closes the loop\nconst card={ runId:$('Kill-switch + Dedupe Guard').item.json.runId, ts:new Date().toISOString(), metrics:$json };\n// persisted via static workflow data / external KV (see HANDOFF)\nconst store=$getWorkflowStaticData('global'); store.lastScorecard=card;\nreturn [{json:card}];"
+      },
+      "id": "performance-scorecard-(persist)-42",
+      "name": "Performance Scorecard (persist)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        6840,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_DIGEST_URL }}",
+        "options": {
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetween": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"text\": \"=\\u2705 AI Content Engine run {{ $json.runId }} complete. Scorecard stored.\"}"
+      },
+      "id": "team-digest-(slack)-43",
+      "name": "Team Digest (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7060,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "id": "workflow-complete-44",
+      "name": "Workflow Complete",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        7280,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Error Collector": {
+      "main": [
+        [
+          {
+            "node": "Alert Charles (Slack/Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Trigger (Mon 06:00)": {
+      "main": [
+        [
+          {
+            "node": "Kill-switch + Dedupe Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Last-Week Analytics": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trend+Keyword+Incentive Research": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Topic Scoring": {
+      "main": [
+        [
+          {
+            "node": "Validate Scoring JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Generate 10 Segmented Ideas": {
+      "main": [
+        [
+          {
+            "node": "Validate Ideas JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategy Review (human approve)": {
+      "main": [
+        [
+          {
+            "node": "Strategy Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategy Approved?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Rejected → re-research (NoOp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Content Brief": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Draft (script/blog/social)": {
+      "main": [
+        [
+          {
+            "node": "Validate Draft Schema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Thumbnail Prompts": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Brand+SEO Check": {
+      "main": [
+        [
+          {
+            "node": "Claude: Solar Claims Compliance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Solar Claims Compliance": {
+      "main": [
+        [
+          {
+            "node": "Claude: Fact-check+Plagiarism",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: Fact-check+Plagiarism": {
+      "main": [
+        [
+          {
+            "node": "Aggregate QC Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate QC Verdict": {
+      "main": [
+        [
+          {
+            "node": "Quality Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Pass?": {
+      "main": [
+        [
+          {
+            "node": "Generate Assets (image-gen)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revise Counter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revise Counter": {
+      "main": [
+        [
+          {
+            "node": "Escalate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate?": {
+      "main": [
+        [
+          {
+            "node": "Escalate to Human (alert)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claude: Draft (script/blog/social)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Assets (image-gen)": {
+      "main": [
+        [
+          {
+            "node": "Assemble Content Pack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho WorkDrive Upload (versioned)": {
+      "main": [
+        [
+          {
+            "node": "Editor Review (human approve)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Content Pack": {
+      "main": [
+        [
+          {
+            "node": "Zoho WorkDrive Upload (versioned)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editor Review (human approve)": {
+      "main": [
+        [
+          {
+            "node": "Editor Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editor Approved?": {
+      "main": [
+        [
+          {
+            "node": "Wait for Recorded Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claude: Content Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto-cut Shorts/Reels/Clips": {
+      "main": [
+        [
+          {
+            "node": "Fan-out Prep",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Recorded Video": {
+      "main": [
+        [
+          {
+            "node": "Auto-cut Shorts/Reels/Clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish YouTube": {
+      "main": [
+        [
+          {
+            "node": "Merge Published",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fan-out Prep": {
+      "main": [
+        [
+          {
+            "node": "Publish YouTube",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Publish WordPress (SEO+schema)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Schedule LinkedIn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Schedule Facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Schedule Instagram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish WordPress (SEO+schema)": {
+      "main": [
+        [
+          {
+            "node": "Merge Published",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Merge Published",
+            "type": "main",
+            "index": 2
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Facebook": {
+      "main": [
+        [
+          {
+            "node": "Merge Published",
+            "type": "main",
+            "index": 3
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Instagram": {
+      "main": [
+        [
+          {
+            "node": "Merge Published",
+            "type": "main",
+            "index": 4
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Merge Published",
+            "type": "main",
+            "index": 5
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture Leads → GHL CRM": {
+      "main": [
+        [
+          {
+            "node": "Collect Analytics (48h/7d)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Published": {
+      "main": [
+        [
+          {
+            "node": "Capture Leads → GHL CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Analytics (48h/7d)": {
+      "main": [
+        [
+          {
+            "node": "Performance Scorecard (persist)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Collector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Performance Scorecard (persist)": {
+      "main": [
+        [
+          {
+            "node": "Team Digest (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Team Digest (Slack)": {
+      "main": [
+        [
+          {
+            "node": "Workflow Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "magnifai-content-engine-v2"
+  },
+  "tags": [
+    {
+      "name": "MagnifAI"
+    },
+    {
+      "name": "content-engine"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><link rel="stylesheet" href="../meeting.css"></head>
+<body>
+  <div id="stage"></div>
+  <script>
+    // Mock chrome.storage with a preset live config (single → YouTube) for streaming tests.
+    window.__storage={ live:{ mode:"single", relayUrl:"", relayKey:"",
+      destinations:[{platform:"youtube",name:"YouTube",url:"rtmp://a.rtmp.youtube.com/live2",key:"TESTKEY",enabled:true}] } };
+    window.chrome={ storage:{ local:{
+      get:async k=>{ const r={}; (Array.isArray(k)?k:[k]).forEach(x=>{ if(x in window.__storage) r[x]=window.__storage[x]; }); return r; },
+      set:async o=>{ Object.assign(window.__storage,o); }
+    }}};
+    // Mock of the Jitsi IFrame API — records executeCommand calls, replays events.
+    window.__calls=[]; window.__disposed=false;
+    window.JitsiMeetExternalAPI=function(domain,opts){
+      this.domain=domain; this.opts=opts; this._h={};
+      this.executeCommand=function(name){ window.__calls.push({name:name,args:[].slice.call(arguments,1)}); };
+      this.addEventListener=function(ev,fn){ this._h[ev]=fn; };
+      this.getNumberOfParticipants=function(){ return (this._n||1); };
+      this.dispose=function(){ window.__disposed=true; };
+      this.emit=function(ev,data){ if(this._h[ev]) this._h[ev](data); };
+      window.__api=this;
+    };
+  </script>
+  <script src="../meeting.js"></script>
+</body></html>

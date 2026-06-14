@@ -1,0 +1,78 @@
+{
+  "manifest_version": 3,
+  "name": "Echo — AI Meeting Notetaker",
+  "short_name": "Echo",
+  "version": "1.0.0",
+  "description": "Records, transcribes, diarizes, and summarizes any call in your browser. Auto-asks to save calls (incl. Mac desktop apps). A Fireflies alternative, 100x better.",
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "notifications",
+    "nativeMessaging",
+    "downloads",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Echo — AI Meeting Notetaker",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://*.webex.com/*",
+        "https://app.slack.com/*",
+        "https://discord.com/*",
+        "https://*.whereby.com/*",
+        "https://app.gather.town/*",
+        "https://*.around.co/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["dashboard.html", "icons/*", "lib/vendor/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "options_page": "options.html",
+  "commands": {
+    "toggle-recording": {
+      "suggested_key": { "default": "Ctrl+Shift+E", "mac": "Command+Shift+E" },
+      "description": "Start/stop recording the active call"
+    }
+  }
+}

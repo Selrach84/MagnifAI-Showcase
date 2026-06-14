@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="head">
+    <div class="logo">◉ Echo</div>
+    <div class="sub">AI Meeting Notetaker</div>
+  </div>
+
+  <div id="state" class="card">
+    <div id="status-line">Checking…</div>
+    <button id="primary" class="btn primary">● Record this tab</button>
+  </div>
+
+  <div class="row">
+    <button id="open-dash" class="btn ghost">📓 Notebook</button>
+    <button id="open-opts" class="btn ghost">⚙ Settings</button>
+  </div>
+
+  <div id="warn" class="warn" hidden></div>
+
+  <div class="foot">
+    <span id="count">—</span> saved calls · <kbd>⌘⇧E</kbd> to toggle
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

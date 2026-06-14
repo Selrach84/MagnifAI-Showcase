@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to ~/.echo/config.json and fill in. Only needed for Mac DESKTOP-APP call recording. Browser calls are configured in the extension Options page instead.",
+  "poll_seconds": 4,
+  "audio_device_index": ":0",
+  "_audio_help": "ffmpeg avfoundation audio device. Run: ffmpeg -f avfoundation -list_devices true -i \"\"  then put the audio device number as \":N\". For system audio you need a loopback device like BlackHole (brew install blackhole-2ch) and an Aggregate/Multi-Output device.",
+  "vault_dir": "/Volumes/External 500 Gb/OBSIDIAN 5.17.26/01 Projects/Echo Meetings",
+  "deepgram_key": "",
+  "openai_key": "",
+  "anthropic_key": "",
+  "anthropic_model": "claude-opus-4-8",
+  "openai_model": "gpt-4o"
+}

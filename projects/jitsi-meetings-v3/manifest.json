@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Jitsi Meetings v3 — Zoom-style calls + multistream",
+  "version": "3.0.0",
+  "description": "Free HD video meetings powered by Jitsi: screen share, chat, breakout rooms, MP4 recording, large-meeting mode, and GO LIVE to YouTube, Facebook, Twitch, TikTok, Instagram and more — right from Chrome.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Jitsi Meetings",
+    "default_icon": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }
+  },
+  "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "permissions": ["storage"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-src https:; child-src https:; media-src 'self' blob:"
+  }
+}

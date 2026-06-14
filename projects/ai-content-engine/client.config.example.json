@@ -1,0 +1,18 @@
+{
+  "_README": "Copy to client.config.json and edit to retarget the engine for a new client. Then run: python3 gen_workflow.py",
+  "workflow_name": "AI Content Engine — <CLIENT> v2 (100X)",
+  "diagram_title": "AI Content Engine for <CLIENT> — v2 (100X)",
+  "claude_model": "claude-sonnet-4-5",
+  "trigger_day": 1,
+  "trigger_hour": 6,
+  "segments": ["residential", "commercial", "battery"],
+  "channels": [
+    { "name": "Publish YouTube", "env": "YOUTUBE_ENDPOINT", "cred": "YOUTUBE" },
+    { "name": "Publish WordPress (SEO+schema)", "env": "WORDPRESS_ENDPOINT", "cred": "WORDPRESS" },
+    { "name": "Schedule LinkedIn", "env": "LINKEDIN_ENDPOINT", "cred": "LINKEDIN" },
+    { "name": "Schedule Facebook", "env": "FACEBOOK_ENDPOINT", "cred": "FACEBOOK" },
+    { "name": "Schedule Instagram", "env": "INSTAGRAM_ENDPOINT", "cred": "INSTAGRAM" },
+    { "name": "Send Email Newsletter", "env": "EMAIL_ENDPOINT", "cred": "EMAIL" },
+    { "name": "Schedule TikTok", "env": "TIKTOK_ENDPOINT", "cred": "TIKTOK" }
+  ]
+}

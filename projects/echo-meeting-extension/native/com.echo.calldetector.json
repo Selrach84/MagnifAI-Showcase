@@ -1,0 +1,9 @@
+{
+  "name": "com.echo.calldetector",
+  "description": "Echo macOS call detector & recorder",
+  "path": "REPLACE_WITH_ABSOLUTE_PATH/call_detector.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://REPLACE_WITH_EXTENSION_ID/"
+  ]
+}

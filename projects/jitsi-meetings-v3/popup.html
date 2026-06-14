@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>Jitsi Meetings</title>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="dot"></span> Jitsi Meetings <span style="font-size:10px;color:#9aa0b4">v3</span></div>
+    <button id="navSettings" class="icon-btn" title="Settings">⚙️</button>
+  </header>
+
+  <section id="view-home" class="view">
+    <div class="actions">
+      <button id="btnNew" class="action new"><span class="ico">🎥</span><span class="lbl">New Meeting</span></button>
+      <button id="btnJoin" class="action join"><span class="ico">＋</span><span class="lbl">Join</span></button>
+      <button id="btnSchedule" class="action sched"><span class="ico">📅</span><span class="lbl">Schedule</span></button>
+      <button id="btnShare" class="action share"><span class="ico">🖥️</span><span class="lbl">Share Screen</span></button>
+    </div>
+    <button id="btnLive" class="golive">📡 Go Live — set up multistream</button>
+
+    <div class="block">
+      <div class="block-h">Upcoming</div>
+      <ul id="schedList" class="list"></ul>
+      <div id="schedEmpty" class="empty">No scheduled meetings.</div>
+    </div>
+    <div class="block">
+      <div class="block-h">Recent</div>
+      <ul id="recentList" class="list"></ul>
+      <div id="recentEmpty" class="empty">No recent meetings.</div>
+    </div>
+  </section>
+
+  <section id="view-join" class="view hidden">
+    <h2 class="vtitle">Join a meeting</h2>
+    <label class="fld">Meeting name or link <input id="joinRoom" type="text" placeholder="e.g. team-standup or server/room" autocomplete="off"></label>
+    <label class="fld">Your name <input id="joinName" type="text" placeholder="Display name" autocomplete="off"></label>
+    <div class="checks">
+      <label><input id="joinAm" type="checkbox"> Join with mic off</label>
+      <label><input id="joinVm" type="checkbox"> Join with camera off</label>
+    </div>
+    <div class="row"><button class="ghost" data-back>Back</button><button id="joinGo" class="primary">Join</button></div>
+  </section>
+
+  <section id="view-sched" class="view hidden">
+    <h2 class="vtitle">Schedule a meeting</h2>
+    <label class="fld">Title <input id="schTitle" type="text" placeholder="Weekly sync" autocomplete="off"></label>
+    <label class="fld">When <input id="schWhen" type="datetime-local"></label>
+    <label class="fld">Room name (optional) <input id="schRoom" type="text" placeholder="auto-generated if blank" autocomplete="off"></label>
+    <div class="row"><button class="ghost" data-back>Back</button><button id="schSave" class="primary">Save</button></div>
+  </section>
+
+  <section id="view-settings" class="view hidden">
+    <h2 class="vtitle">Settings</h2>
+    <label class="fld">Default display name <input id="setName" type="text" placeholder="Your name" autocomplete="off"></label>
+    <div class="checks">
+      <label><input id="setAm" type="checkbox"> Always start with mic off</label>
+      <label><input id="setVm" type="checkbox"> Always start with camera off</label>
+      <label><input id="setLarge" type="checkbox" checked> Large meeting mode (optimise for up to 1000)</label>
+    </div>
+    <label class="fld">Jitsi server <input id="setServer" type="text" placeholder="jitsi.member.fsf.org (default)" autocomplete="off"></label>
+    <div class="row"><button class="ghost" data-back>Back</button><button id="setSave" class="primary">Save</button></div>
+    <p class="hint">Default <b>jitsi.member.fsf.org</b> = instant guest rooms. Streaming (Go Live) needs a server with Jibri/streaming enabled (JaaS or self-host). MP4 recording + breakout rooms work on any server.</p>
+  </section>
+
+  <section id="view-live" class="view hidden">
+    <h2 class="vtitle">📡 Go Live — multistream</h2>
+    <div class="modes">
+      <label><input type="radio" name="liveMode" value="single" checked> Single platform (Jitsi → platform)</label>
+      <label><input type="radio" name="liveMode" value="relay"> Multi-platform via relay</label>
+    </div>
+    <div id="liveRelayBox" class="hidden">
+      <label class="fld">Relay ingest URL <input id="liveRelayUrl" type="text" placeholder="rtmp://your-relay/live (Restream/Cloudflare/nginx)" autocomplete="off"></label>
+      <label class="fld">Relay stream key <input id="liveRelayKey" type="text" placeholder="key (if any)" autocomplete="off"></label>
+    </div>
+
+    <div class="block-h">Destinations</div>
+    <div id="destList" class="dest-list"></div>
+    <div class="dest-add">
+      <select id="destPreset"></select>
+      <button id="destAdd" class="li-btn">Add</button>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button id="liveFfmpeg" class="ghost">Copy ffmpeg fan-out</button>
+      <button id="liveNginx" class="ghost">Copy nginx config</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="ghost" data-back>Back</button>
+      <button id="liveSave" class="primary">Save</button>
+    </div>
+    <p class="hint">Browsers can't push RTMP, so streaming runs server-side via Jitsi <b>Jibri</b> (JaaS or self-host). <b>Single</b> = Jitsi streams to one platform. <b>Relay</b> = Jitsi streams to your relay which fans out to <i>all</i> platforms — use the generated <b>ffmpeg</b>/<b>nginx</b> config on your relay box, or a service like Restream/Cloudflare. Start/stop the stream from the in-call 📡 button. Instagram/TikTok/LinkedIn/X give a per-broadcast Server URL + key — paste them.</p>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

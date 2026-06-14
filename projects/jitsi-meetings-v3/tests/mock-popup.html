@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body>
+  <script>
+    // Mock chrome.* so popup.js pure logic can run headless.
+    window.__tabs=[]; window.__storage={};
+    window.chrome={
+      runtime:{ getURL:p=>"chrome-extension://test/"+p },
+      storage:{ local:{
+        get:async k=>{ const r={}; (Array.isArray(k)?k:[k]).forEach(x=>{ if(x in window.__storage) r[x]=window.__storage[x]; }); return r; },
+        set:async o=>{ Object.assign(window.__storage,o); }
+      }},
+      tabs:{ create:o=>{ window.__tabs.push(o); } }
+    };
+  </script>
+  <script src="../popup.js"></script>
+</body></html>

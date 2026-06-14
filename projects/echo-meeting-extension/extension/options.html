@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>◉ Echo Settings</h1>
+
+    <section>
+      <h2>Transcription</h2>
+      <label>Engine
+        <select id="sttEngine">
+          <option value="auto">Auto — free local Whisper, or Deepgram if key set (recommended)</option>
+          <option value="local">Free local Whisper — all-party, runs on-device, no key (works on Brave)</option>
+          <option value="webspeech">Free Web Speech — live captions, your voice (Google Chrome only)</option>
+          <option value="deepgram">Deepgram — live all-party + speaker labels (needs key)</option>
+        </select>
+      </label>
+      <p class="note"><b>Works out of the box, no key, no cloud:</b> local Whisper transcribes the whole call on your device after it ends (first use downloads a ~40MB model once). Add a Deepgram key for live diarized captions during the call.</p>
+      <label>Deepgram API key <span class="hint">optional — for all-party diarization</span>
+        <input type="password" id="deepgramKey" placeholder="dg_..." />
+      </label>
+      <label>Language
+        <select id="language">
+          <option value="en">English</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="tl">Tagalog</option>
+          <option value="ja">Japanese</option>
+          <option value="zh">Chinese</option>
+          <option value="multi">Auto / Multi</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="captureMic" /> Capture my microphone too (records your voice)</label>
+      <p class="note">No Deepgram key? Echo records audio and transcribes after the call with OpenAI Whisper (needs OpenAI key below).</p>
+    </section>
+
+    <section>
+      <h2>AI Summary</h2>
+      <label>Provider
+        <select id="llmProvider">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (GPT)</option>
+        </select>
+      </label>
+      <div id="anthropic-fields">
+        <label>Anthropic API key <input type="password" id="anthropicKey" placeholder="sk-ant-..." /></label>
+        <label>Model <input type="text" id="anthropicModel" placeholder="claude-opus-4-8" /></label>
+      </div>
+      <div id="openai-fields">
+        <label>OpenAI API key <input type="password" id="openaiKey" placeholder="sk-..." /></label>
+        <label>Model <input type="text" id="openaiModel" placeholder="gpt-4o" /></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Automation</h2>
+      <label class="check"><input type="checkbox" id="autoAsk" /> Auto-ask to save when a call is detected</label>
+      <label class="check"><input type="checkbox" id="autoSummarize" /> Auto-summarize after each call</label>
+      <label class="check"><input type="checkbox" id="autoExport" /> Auto-export markdown to Downloads/Echo Meetings</label>
+      <label class="check"><input type="checkbox" id="nativeDetect" /> Detect Mac desktop calls (Zoom/FaceTime/Teams apps) via native helper</label>
+    </section>
+
+    <section>
+      <h2>Advanced — self-host / proxy (optional)</h2>
+      <label>Deepgram URL override <input type="text" id="deepgramUrl" placeholder="wss://api.deepgram.com/v1/listen" /></label>
+      <label>Anthropic base URL <input type="text" id="anthropicBaseUrl" placeholder="https://api.anthropic.com" /></label>
+      <label>OpenAI base URL <input type="text" id="openaiBaseUrl" placeholder="https://api.openai.com" /></label>
+      <p class="note">Leave blank for defaults. Use these to point Echo at a proxy or self-hosted STT/LLM gateway.</p>
+    </section>
+
+    <button id="save" class="save">Save settings</button>
+    <span id="saved" class="saved-msg"></span>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

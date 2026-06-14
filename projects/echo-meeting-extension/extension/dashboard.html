@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Echo Notebook</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">◉ Echo</div>
+    <input id="search" class="search" placeholder="Search calls, transcripts…" />
+    <div id="list" class="list"></div>
+    <button id="opts" class="opts">⚙ Settings</button>
+  </aside>
+
+  <main class="main">
+    <div id="empty" class="empty">
+      <h2>No call selected</h2>
+      <p>Record a call from the popup or a meeting tab. It’ll show up here.</p>
+    </div>
+
+    <div id="detail" class="detail" hidden>
+      <header class="dh">
+        <div>
+          <h1 id="d-title"></h1>
+          <div id="d-meta" class="meta"></div>
+        </div>
+        <div class="actions">
+          <button id="export" class="btn">⬇ Export .md</button>
+          <button id="copy" class="btn">⧉ Copy</button>
+          <button id="del" class="btn danger">🗑 Delete</button>
+        </div>
+      </header>
+
+      <audio id="player" controls></audio>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="notes">Notes</button>
+        <button class="tab" data-tab="transcript">Transcript</button>
+        <button class="tab" data-tab="ask">Ask Echo</button>
+      </nav>
+
+      <section id="tab-notes" class="pane"></section>
+      <section id="tab-transcript" class="pane" hidden></section>
+      <section id="tab-ask" class="pane" hidden>
+        <div id="chat" class="chat"></div>
+        <div class="ask-row">
+          <input id="q" placeholder="Ask anything about this call…" />
+          <button id="send" class="btn">Ask</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
