@@ -15,6 +15,10 @@ MagnifAI delivers production-grade automations that eliminate repetitive work. T
 | [Jitsi Meetings v3](/projects/jitsi-meetings-v3/) | Chrome MV3 · Jitsi API · Jibri · ffmpeg | Zoom clone on Jitsi with multi-platform livestreaming (YouTube, Facebook, Twitch, TikTok, LinkedIn, X, Kick). MP4 recording, breakout rooms, 1000-person mode. |
 | [Video to Notes](/projects/video-to-notes/) | Python · Claude · yt-dlp · ffmpeg · Whisper | Turn tutorial/training videos into structured study notes with screenshots, transcripts, and AI synthesis. Security-hardened. MIT licensed. |
 | [MagnifAI AI OS](/projects/magnifai-ai-os/) | Python · FastAPI · PostgreSQL · Redis · Docker · LLM Gateway | Platform for delivering AI automations at scale. Provider-agnostic LLM layer, pluggable connectors, cost tracking. 67 Python files. |
+| [Roofing Company Automation OS](/projects/roofing-company-automation-os/) | GoHighLevel · AI · Google Ads · Competitive Intel | Full-stack transformation: CRM, AI claims triage, lead gen, phone system, referral network. Packaged for an entire industry vertical. |
+| [Website + GHL Audit Framework](/projects/website-ghl-audit-framework/) | GHL · Audit Methodology · Scoring Matrix | Four-pillar audit: website, CRM, content, compliance → 27+ ranked opportunities → 3-phase build plan. Proven for multiple clients. |
+| [Automation Audit Framework](/projects/automation-audit-framework/) | Auditing · Pain Point Analysis · Roadmapping | Outside-in audit methodology for any business. Stack inventory, bottleneck analysis, phased roadmap — no internal access needed. |
+| [LinkedIn AI News Agent](/projects/linkedin-ai-news-agent/) | Python · X API · LinkedIn API · SVG · Cron | Autonomous daily AI news poster — sources from X, summarizes, generates infographic, posts to LinkedIn. Zero daily intervention. |
 
 ## What this proves
 
