@@ -1,0 +1,17 @@
+{
+  "name": "claude-watch-secure",
+  "description": "Local marketplace for the security-hardened claude-watch fork.",
+  "owner": {
+    "name": "local",
+    "url": "file:///"
+  },
+  "plugins": [
+    {
+      "name": "claude-watch-secure",
+      "source": "./plugin",
+      "description": "Security-hardened fork of devinilabs/claude-watch",
+      "version": "0.1.0-secure.1",
+      "category": "productivity"
+    }
+  ]
+}

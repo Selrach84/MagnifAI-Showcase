@@ -1,0 +1,25 @@
+{
+  "id": "email-sequence-v1",
+  "name": "Email Sequence Automation",
+  "description": "Automated email sequences with AI-powered personalization",
+  "version": "1.0.0",
+  "category": "email",
+  "required_connectors": ["email"],
+  "required_llm": true,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "sender_email": {"type": "string", "required": true},
+      "sequence_name": {"type": "string", "required": true},
+      "delay_hours": {"type": "number", "default": 24},
+      "personalize": {"type": "boolean", "default": true}
+    }
+  },
+  "steps": [
+    {"type": "trigger", "config": {"event": "contact_added"}},
+    {"type": "llm_personalize", "config": {"template": "email_content"}},
+    {"type": "email_send", "config": {"delay": "delay_hours"}},
+    {"type": "track_engagement", "config": {"metrics": ["open", "click"]}}
+  ],
+  "outputs": ["sent_emails", "engagement_metrics"]
+}

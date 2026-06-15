@@ -1,0 +1,32 @@
+[project]
+name = "claude-watch-secure"
+version = "0.1.0"
+description = "Security-hardened fork of devinilabs/claude-watch."
+requires-python = ">=3.11"
+# yt-dlp has a long history of extractor RCE / file-read CVEs. Pin to a
+# minimum version that includes the latest fixes at fork time and let users
+# bump as new releases land. The runtime warns if the resolved binary
+# reports an older version.
+dependencies = [
+    "yt-dlp>=2025.10.22",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q --tb=short"
+markers = [
+    "integration: tests that shell out to real ffmpeg/yt-dlp",
+    "network: tests that require network access",
+    "security: tests that exercise the URL/path validation policy",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

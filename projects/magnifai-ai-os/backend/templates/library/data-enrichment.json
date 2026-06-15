@@ -1,0 +1,24 @@
+{
+  "id": "data-enrichment-v1",
+  "name": "Data Enrichment Pipeline",
+  "description": "Enrich contact/company data from multiple sources with AI analysis",
+  "version": "1.0.0",
+  "category": "data",
+  "required_connectors": ["crm"],
+  "required_llm": true,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "enrichment_sources": {"type": "string", "required": true},
+      "batch_size": {"type": "number", "default": 50},
+      "overwrite_existing": {"type": "boolean", "default": false}
+    }
+  },
+  "steps": [
+    {"type": "crm_fetch", "config": {"filter": "needs_enrichment"}},
+    {"type": "data_lookup", "config": {"sources": "enrichment_sources"}},
+    {"type": "llm_analyze", "config": {"prompt": "Extract key insights"}},
+    {"type": "crm_update", "config": {"merge_strategy": "overwrite_existing"}}
+  ],
+  "outputs": ["enriched_records", "data_quality_report"]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "lead-scoring-v1",
+  "name": "AI Lead Scoring",
+  "description": "Score incoming leads using AI analysis of company data and engagement",
+  "version": "1.0.0",
+  "category": "lead-scoring",
+  "required_connectors": ["webhook"],
+  "required_llm": true,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "source_webhook": {"type": "string", "required": true},
+      "scoring_model": {"type": "string", "default": "gpt-4o"},
+      "min_score_threshold": {"type": "number", "default": 0.7}
+    }
+  },
+  "steps": [
+    {"type": "webhook_receive", "config": {"path": "/leads"}},
+    {"type": "llm_analyze", "config": {"prompt": "Score this lead"}},
+    {"type": "conditional", "config": {"condition": "score > threshold"}},
+    {"type": "crm_update", "config": {"action": "update_score"}}
+  ],
+  "outputs": ["scored_leads", "notifications"]
+}

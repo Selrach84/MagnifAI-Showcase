@@ -1,0 +1,26 @@
+{
+  "id": "report-generator-v1",
+  "name": "AI Report Generator",
+  "description": "Generate automated reports from data sources with AI summarization",
+  "version": "1.0.0",
+  "category": "report",
+  "required_connectors": [],
+  "required_llm": true,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "report_name": {"type": "string", "required": true},
+      "data_source": {"type": "string", "required": true},
+      "schedule_cron": {"type": "string", "default": "0 9 * * 1"},
+      "recipients": {"type": "string", "required": true}
+    }
+  },
+  "steps": [
+    {"type": "data_fetch", "config": {"source": "data_source"}},
+    {"type": "data_transform", "config": {"format": "analytics"}},
+    {"type": "llm_summarize", "config": {"style": "executive"}},
+    {"type": "report_format", "config": {"output": "pdf"}},
+    {"type": "email_send", "config": {"to": "recipients"}}
+  ],
+  "outputs": ["report_file", "delivery_confirmation"]
+}

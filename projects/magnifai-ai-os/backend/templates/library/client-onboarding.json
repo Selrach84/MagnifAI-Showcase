@@ -1,0 +1,25 @@
+{
+  "id": "client-onboarding-v1",
+  "name": "Client Onboarding Workflow",
+  "description": "Automated client onboarding with task assignments and follow-ups",
+  "version": "1.0.0",
+  "category": "onboarding",
+  "required_connectors": ["crm", "email"],
+  "required_llm": false,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "welcome_email_template": {"type": "string", "required": true},
+      "task_assignee": {"type": "string", "required": true},
+      "follow_up_days": {"type": "number", "default": 3}
+    }
+  },
+  "steps": [
+    {"type": "crm_create_contact", "config": {"status": "onboarding"}},
+    {"type": "email_send", "config": {"template": "welcome_email_template"}},
+    {"type": "task_create", "config": {"assignee": "task_assignee"}},
+    {"type": "delay", "config": {"days": "follow_up_days"}},
+    {"type": "email_send", "config": {"template": "follow_up"}}
+  ],
+  "outputs": ["onboarding_status", "tasks_created"]
+}

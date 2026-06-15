@@ -13,6 +13,8 @@ MagnifAI delivers production-grade automations that eliminate repetitive work. T
 | [ReceiptIQ](/projects/receiptiq/) | Python · Telegram Bot · Gemini Flash · Google Sheets | Vision-LLM receipt scanner. Clients snap photos in Telegram → structured data lands in Google Sheets. Runs on a 1 GB RAM VPS. ~$0.0001/receipt. |
 | [Sophie — GHL Conversation AI](/projects/ghl-chatbot-sophie/) | GoHighLevel · Agent Studio · Conversation AI · Calendars | Production AI chatbot that qualifies leads, captures contacts, and books appointments. Stress-tested (12/12 messages). Full Agent Studio configuration. |
 | [Jitsi Meetings v3](/projects/jitsi-meetings-v3/) | Chrome MV3 · Jitsi API · Jibri · ffmpeg | Zoom clone on Jitsi with multi-platform livestreaming (YouTube, Facebook, Twitch, TikTok, LinkedIn, X, Kick). MP4 recording, breakout rooms, 1000-person mode. |
+| [Video to Notes](/projects/video-to-notes/) | Python · Claude · yt-dlp · ffmpeg · Whisper | Turn tutorial/training videos into structured study notes with screenshots, transcripts, and AI synthesis. Security-hardened. MIT licensed. |
+| [MagnifAI AI OS](/projects/magnifai-ai-os/) | Python · FastAPI · PostgreSQL · Redis · Docker · LLM Gateway | Platform for delivering AI automations at scale. Provider-agnostic LLM layer, pluggable connectors, cost tracking. 67 Python files. |
 
 ## What this proves
 
