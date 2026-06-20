@@ -20,6 +20,7 @@ MagnifAI delivers production-grade automations that eliminate repetitive work. T
 | [Automation Audit Framework](/projects/automation-audit-framework/) | Auditing · Pain Point Analysis · Roadmapping | Outside-in audit methodology for any business. Stack inventory, bottleneck analysis, phased roadmap — no internal access needed. |
 | [LinkedIn AI News Agent](/projects/linkedin-ai-news-agent/) | Python · X API · LinkedIn API · SVG · Cron | Autonomous daily AI news poster — sources from X, summarizes, generates infographic, posts to LinkedIn. Zero daily intervention. |
 | [Vault RAG](/projects/vault-rag/) | Python · BM25 · IVF · MCP · SQLite · Headroom | Token-free knowledge-graph RAG for Obsidian. 7-signal retrieval, 39ms cold start, 10K+ queries/sec. 100x token savings. |
+| [RTK-Caveman](/projects/rtk-caveman/) | Shell · MCP · Skill Definition | Dual-layer token suppression: RTK compresses CLI output 49-97%, Caveman cuts responses ~80%. Combined ~37-40% session savings. |
 
 ## What this proves
 
