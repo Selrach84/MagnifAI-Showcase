@@ -1,0 +1,1 @@
+vault-rag v2.6

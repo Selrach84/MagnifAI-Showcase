@@ -19,6 +19,7 @@ MagnifAI delivers production-grade automations that eliminate repetitive work. T
 | [Website + GHL Audit Framework](/projects/website-ghl-audit-framework/) | GHL · Audit Methodology · Scoring Matrix | Four-pillar audit: website, CRM, content, compliance → 27+ ranked opportunities → 3-phase build plan. Proven for multiple clients. |
 | [Automation Audit Framework](/projects/automation-audit-framework/) | Auditing · Pain Point Analysis · Roadmapping | Outside-in audit methodology for any business. Stack inventory, bottleneck analysis, phased roadmap — no internal access needed. |
 | [LinkedIn AI News Agent](/projects/linkedin-ai-news-agent/) | Python · X API · LinkedIn API · SVG · Cron | Autonomous daily AI news poster — sources from X, summarizes, generates infographic, posts to LinkedIn. Zero daily intervention. |
+| [Vault RAG](/projects/vault-rag/) | Python · BM25 · IVF · MCP · SQLite · Headroom | Token-free knowledge-graph RAG for Obsidian. 7-signal retrieval, 39ms cold start, 10K+ queries/sec. 100x token savings. |
 
 ## What this proves
 
